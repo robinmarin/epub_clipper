@@ -30,10 +30,13 @@ def write_chapters(
     """
     output_path = Path(output_dir)
 
-    if output_path.exists() and not overwrite:
-        raise FileExistsError(
-            f"Output directory exists: {output_dir}. Use --overwrite to replace."
-        )
+    if output_path.exists():
+        if not overwrite:
+            raise FileExistsError(
+                f"Output directory exists: {output_dir}. Use --overwrite to replace."
+            )
+        import shutil
+        shutil.rmtree(output_path)
 
     output_path.mkdir(parents=True, exist_ok=True)
 

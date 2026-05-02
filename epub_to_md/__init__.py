@@ -3,8 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from epub_to_md.parser import parse_epub
-from epub_to_md.converter import convert_chapters_to_markdown
+from epub_to_md.parser import parse_epub, convert_chapters_to_markdown
 from epub_to_md.writer import write_chapters
 
 __version__ = "1.0.0"

@@ -95,7 +95,7 @@ def html_to_markdown(html: str) -> str:
         heading_style="ATX",
     )
 
-    markdown = converter.convert(soup)
+    markdown = converter.convert(str(soup))
 
     markdown = _post_process_markdown(markdown)
 

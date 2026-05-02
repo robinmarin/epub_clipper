@@ -285,8 +285,6 @@ def convert_chapters_to_markdown(chapters: list[RawChapter]) -> list[MarkdownCha
             raw.title,
             lowercase=True,
             max_length=50,
-            word_boundary=True,
-            save_text=True,
         )
 
         filename = f"chapter_{raw.number:02d}_{slug}.md"
