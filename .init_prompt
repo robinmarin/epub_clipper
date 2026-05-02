@@ -1,0 +1,155 @@
+You are an expert Python engineer. Build a reusable CLI module that converts an 
+EPUB file into a structured set of per-chapter markdown files, designed to serve 
+as a living knowledge base for an LLM agent.
+
+## Purpose
+This is a reusable module — clean interfaces, well-documented, importable as a 
+library OR runnable as a CLI. Another developer should be able to drop this into 
+any project.
+
+## Output Structure
+Given an EPUB called "Factor Investing.epub", produce:
+
+  ./output/
+    _index.md                  ← book-level index (TOC, metadata, chapter list)
+    chapter_01_introduction.md
+    chapter_02_momentum.md
+    chapter_03_value.md
+    ...
+
+## Each Chapter File Format
+Every chapter file must follow this exact template:
+
+  ---
+  title: "Chapter 3: Value Factors"
+  chapter: 3
+  slug: value-factors
+  book: "Factor Investing: A Practitioner's Guide"
+  author: "John Smith"
+  total_chapters: 12
+  ---
+
+  # Chapter 3: Value Factors
+
+  ## 📝 Agent Notes
+  <!-- Agent writes here. Format: YYYY-MM-DD: note text -->
+
+  ## ❓ Open Questions
+  <!-- Unresolved questions about this chapter go here -->
+
+  ## 🔗 Cross-References
+  <!-- Links to other chapters that relate to this one -->
+
+  ---
+
+  ## Original Text
+
+  ### 3.1 Defining Value
+  [original text...]
+
+  ### 3.2 Construction Approaches
+  [original text...]
+
+## _index.md Format
+
+  ---
+  book: "..."
+  author: "..."
+  converted: "2024-03-12"
+  total_chapters: 12
+  ---
+
+  # [Book Title]
+
+  ## 📝 Agent Notes
+  <!-- High-level notes about the whole book -->
+
+  ## Chapters
+  | # | Title | Slug | Key Topics |
+  |---|-------|------|------------|
+  | 1 | Introduction | chapter_01_introduction | ... |
+  ...
+
+  ## Full Table of Contents
+  [nested TOC from EPUB]
+
+## Parsing Requirements
+- Use ebooklib to read the EPUB
+- Use BeautifulSoup4 to parse HTML content
+- Detect chapter boundaries from: EPUB spine order, H1/H2 headings, 
+  NCX/NAV table of contents
+- Convert HTML to clean markdown: headings, paragraphs, bold, italic, 
+  lists, tables (as markdown tables)
+- Strip: nav elements, copyright boilerplate, cover pages, page numbers,
+  running headers/footers
+- Preserve: all headings as ## and ### (maintaining hierarchy under 
+  the chapter's # heading), block quotes, code blocks
+- Slugify chapter titles for filenames: lowercase, spaces to underscores, 
+  strip special chars, prefix with zero-padded chapter number
+
+## Module Interface
+Expose these as importable functions:
+
+  convert_epub(
+    epub_path: str,
+    output_dir: str = "./output",
+    overwrite: bool = False
+  ) -> ConversionResult
+
+  ConversionResult:
+    book_title: str
+    author: str
+    chapters: list[ChapterInfo]
+    output_dir: str
+    index_path: str
+
+  ChapterInfo:
+    number: int
+    title: str
+    slug: str
+    filename: str
+    word_count: int
+
+## CLI Interface
+  python epub_to_md.py <epub_path> [--output ./output] [--overwrite]
+
+  Progress output:
+    📖 Parsing: Factor Investing.epub
+    📑 Found 12 chapters
+    ✅ chapter_01_introduction.md (3,241 words)
+    ✅ chapter_02_momentum.md (4,102 words)
+    ...
+    📁 Done. 12 files written to ./output/
+    📋 Index written to ./output/_index.md
+
+## Error Handling
+- Missing file: clear message with path
+- Malformed EPUB: warn and skip bad sections, don't crash
+- Output dir exists + overwrite=False: prompt or flag error
+- Empty chapters: skip and warn, don't write empty files
+
+## File Structure
+  epub_to_md/
+    __init__.py       ← exports convert_epub, ConversionResult, ChapterInfo
+    parser.py         ← EPUB parsing and chapter detection
+    converter.py      ← HTML to markdown conversion
+    writer.py         ← file writing and template rendering
+    cli.py            ← CLI entry point
+  README.md           ← usage docs with examples
+
+## Dependencies
+  ebooklib
+  beautifulsoup4
+  markdownify        ← for HTML to markdown
+  lxml
+  python-slugify
+
+## Requirements
+- Python 3.10+
+- Type hints throughout
+- Docstrings on all public functions
+- No global state — everything passed explicitly
+- Write a requirements.txt
+
+Start by writing all files in full, then confirm the structure with a 
+tree output.
