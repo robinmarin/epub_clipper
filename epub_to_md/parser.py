@@ -93,20 +93,24 @@ def _extract_chapters(book: epub.EpubBook) -> list[RawChapter]:
     spine = book.spine
     toc = _get_toc(book)
 
-    spine_items = []
     if hasattr(spine, "items"):
         spine_items = list(spine.items)
     elif hasattr(spine, "get_items"):
-        spine_items = spine.get_items()
+        spine_items = list(spine.get_items())
+    else:
+        spine_items = list(spine)
 
     processed_ids = set()
 
     for idx, spine_item in enumerate(spine_items):
-        item_id = spine_item
-        if hasattr(spine_item, "id"):
-            item_id = spine_item.id
-        elif hasattr(spine_item, "get_id"):
-            item_id = spine_item.get_id()
+        if isinstance(spine_item, tuple):
+            item_id = spine_item[0]
+        else:
+            item_id = spine_item
+            if hasattr(spine_item, "id"):
+                item_id = spine_item.id
+            elif hasattr(spine_item, "get_id"):
+                item_id = spine_item.get_id()
 
         if item_id in processed_ids:
             continue
@@ -115,19 +119,17 @@ def _extract_chapters(book: epub.EpubBook) -> list[RawChapter]:
         if not item:
             continue
 
-        if item.get_type() != 1:
-            continue
-
         content = item.get_content()
         if not content:
             continue
 
-        if _is_nav_or_cover(content):
+        item_type = item.get_type()
+        if item_type != 9 and item_type != 1:
             continue
 
         soup = BeautifulSoup(content, "lxml")
 
-        chapter_title = _extract_title_from_soup(soup, item.href or "")
+        chapter_title = _extract_title_from_soup(soup, item.file_name or "")
         chapter_number = _extract_chapter_number(chapter_title, idx)
 
         body = soup.find("body")
@@ -136,7 +138,8 @@ def _extract_chapters(book: epub.EpubBook) -> list[RawChapter]:
         else:
             chapter_content = content
 
-        if len(chapter_content.strip()) < 100:
+        body_text = body.get_text().strip() if body else ""
+        if len(body_text) < 50 and len(chapter_content) < 500:
             continue
 
         chapters.append(
@@ -221,6 +224,14 @@ def _is_nav_or_cover(content: str) -> bool:
         classes = body.get("class") or []
         if any(c in classes for c in ["cover", "nav", "titlepage"]):
             return True
+
+    frontmatter = soup.find("section", {"epub:type": "frontmatter"})
+    if frontmatter:
+        return True
+
+    titlepage = soup.find("section", {"epub:type": "titlePage"}) or soup.find(class_="titlePage")
+    if titlepage:
+        return True
 
     return False
 
